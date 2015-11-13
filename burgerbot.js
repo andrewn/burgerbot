@@ -80,7 +80,7 @@ function scrapeAndNotify() {
             }
           }
         );
-      } else {
+      }/* else {
         push.send(
           'Nada :-(',
           serviceUrl,
@@ -94,7 +94,7 @@ function scrapeAndNotify() {
             }
           }
         );
-      }
+      }*/
       schedule(scrapeAndNotify);
     });
 }

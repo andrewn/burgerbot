@@ -9,10 +9,8 @@
   },
   "author": "",
   "license": "MIT",
-  "devDependencies": {
-    "scraperjs": "^1.0.1"
-  },
   "dependencies": {
+    "scraperjs": "^1.0.1",
     "express": "^4.13.3",
     "node-pushover": "^0.2.2"
   }

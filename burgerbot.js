@@ -25,7 +25,8 @@ var appointments,
 var app = express();
 
 app.get('/', function (req, res) {
-  var html = '<h1>Burgerbot</h1>' +
+  var html = '<html><head><meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"><body>' +
+    '<h1>Burgerbot</h1>' +
     '<ul>' +
       (
         appointments && appointments.length > 0 ?

@@ -30,7 +30,7 @@ app.get('/', function (req, res) {
     '<ul>' +
       (
         appointments && appointments.length > 0 ?
-          appointments.map(html).join('\n') :
+          appointments.map(renderItem).join('\n') :
           '<li>:-(</li>'
       ) +
     '</ul>';
@@ -54,7 +54,7 @@ var appointment = '.calendar-month-table td a';
 
 scrapeAndNotify();
 
-function html(a) {
+function renderItem(a) {
   return '<li>' +
    '<a href="' + a.url + '">' +
      a.month + ' ' + a.date +

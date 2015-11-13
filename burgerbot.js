@@ -1,18 +1,26 @@
 var express = require('express');
 var scraperjs = require('scraperjs');
 var Pushover = require('node-pushover');
+var chalk = require('chalk');
 
 if (!process.env.PUSH_TOKEN || !process.env.PUSH_USERKEY) {
-  console.error('Set PUSH_TOKEN and PUSH_USERKEY');
+  console.error( chalk.red('Set PUSH_TOKEN and PUSH_USERKEY') );
   process.exit(1);
 }
 
 if (!process.env.SCRAPE_INTERVAL_SEC) {
-  console.error('Set SCRAPE_INTERVAL_SEC');
+  console.error( chalk.red('Set SCRAPE_INTERVAL_SEC') );
   process.exit(1);
 }
 
 var SCRAPE_INTERVAL_MS = 1000 * process.env.SCRAPE_INTERVAL_SEC;
+
+var NOTIFICATION_TIMEOUT_MS = process.env.NOTIFICATION_TIMEOUT_MS ?
+  process.env.NOTIFICATION_TIMEOUT_MS * 1000 :
+  60 * 5 * 1000;
+
+console.log('SCRAPE_INTERVAL_MS:', SCRAPE_INTERVAL_MS);
+console.log('NOTIFICATION_TIMEOUT_MS: ', NOTIFICATION_TIMEOUT_MS);
 
 var push = new Pushover({
     token: process.env.PUSH_TOKEN,
@@ -25,7 +33,13 @@ var appointments,
 var app = express();
 
 app.get('/', function (req, res) {
-  var html = '<html><head><meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"><body>' +
+  var html = '<html><head><meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;">' +
+  '<style>' +
+  'body { font-family: -apple-system; sans-serif; }' +
+  'ul { list-style: none; }' +
+  'li { height: 2rem; margin: 0; padding: 0; }' +
+  '</style>' +
+  '<body>' +
     '<h1>Burgerbot</h1>' +
     '<ul>' +
       (
@@ -54,48 +68,57 @@ var appointment = '.calendar-month-table td a';
 
 scrapeAndNotify();
 
+var lastNotificationTime = Date.now() - NOTIFICATION_TIMEOUT_MS - 1;
+
+console.log('lastNotificationTime: ', lastNotificationTime);
+
 function renderItem(a) {
   return '<li>' +
    '<a href="' + a.url + '">' +
-     a.month + ' ' + a.date +
+     a.date + ' ' + a.month + ' ' +
      '</a></li>';
 }
 
+function notify() {
+  var now = Date.now(),
+      timeSinceLastNotification = now - lastNotificationTime;
+
+  if (timeSinceLastNotification < NOTIFICATION_TIMEOUT_MS) {
+    console.log( chalk.bold('Within notification timeout, not notifying'), timeSinceLastNotification, NOTIFICATION_TIMEOUT_MS);
+    return;
+  }
+
+  console.log( chalk.bold('Outside notification time'), timeSinceLastNotification, NOTIFICATION_TIMEOUT_MS);
+
+  push.send(
+    'Appointments!',
+    serviceUrl,
+    function (err) {
+      if (err) {
+        console.error( chalk.red('Error sending notification') );
+        console.error(err);
+        console.error(err.stack);
+      } else {
+        console.log( chalk.green('Successful notification') );
+      }
+    }
+  );
+
+  lastNotificationTime = Date.now();
+}
+
 function scrapeAndNotify() {
-  console.log('scrapeAndNotify');
+  console.log('\nscrapeAndNotify');
   scrape()
     .then(function (appts) {
-      console.log(appts);
+      console.log(JSON.stringify(appts));
       appointments = appts;
       if (appointments.length > 0) {
-        push.send(
-          'Appointments!',
-          serviceUrl,
-          function (err) {
-            if (err) {
-              console.error('Error sending notification');
-              console.error(err);
-              console.error(err.stack);
-            } else {
-              console.log('Successful notification');
-            }
-          }
-        );
-      }/* else {
-        push.send(
-          'Nada :-(',
-          serviceUrl,
-          function (err) {
-            if (err) {
-              console.error('Error sending notification');
-              console.error(err);
-              console.error(err.stack);
-            } else {
-              console.log('Successful notification');
-            }
-          }
-        );
-      }*/
+        console.log( chalk.bold.green('Appointments') );
+        notify(appointments);
+      } else {
+        console.log( chalk.bold.blue('Nothing found') );
+      }
       schedule(scrapeAndNotify);
     });
 }
@@ -106,7 +129,7 @@ function scrape() {
     .scrape(function($) {
       return $(appointment).map(function() {
         return {
-          month: $(this).closest(table).find(month).text(),
+          month: $(this).closest(table).find(month).text().trim(),
           date: $(this).text(),
           url: $(this).attr('href')
         };

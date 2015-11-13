@@ -10,8 +10,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "scraperjs": "^1.0.1",
+    "chalk": "^1.1.1",
     "express": "^4.13.3",
-    "node-pushover": "^0.2.2"
+    "node-pushover": "^0.2.2",
+    "scraperjs": "^1.0.1"
   }
 }

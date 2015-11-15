@@ -2,6 +2,8 @@ var express = require('express');
 var scraperjs = require('scraperjs');
 var Pushover = require('node-pushover');
 var chalk = require('chalk');
+var parse = require('url').parse;
+var format = require('url').format;
 
 if (!process.env.PUSH_TOKEN || !process.env.PUSH_USERKEY) {
   console.error( chalk.red('Set PUSH_TOKEN and PUSH_USERKEY') );
@@ -66,6 +68,13 @@ var table = '.calendar-month-table';
 var month = '.month';
 var appointment = '.calendar-month-table td a';
 
+var baseUrl = {
+  protocol: parse(url).protocol,
+  host: parse(url).host
+};
+
+console.log('baseUrl:', baseUrl);
+
 scrapeAndNotify();
 
 var lastNotificationTime = Date.now() - NOTIFICATION_TIMEOUT_MS - 1;
@@ -77,6 +86,10 @@ function renderItem(a) {
    '<a href="' + a.url + '">' +
      a.date + ' ' + a.month + ' ' +
      '</a></li>';
+}
+
+function addBaseUrlToPath(base, path) {
+  return format( Object.assign({}, base, { pathname: path }) );
 }
 
 function notify() {
@@ -131,7 +144,7 @@ function scrape() {
         return {
           month: $(this).closest(table).find(month).text().trim(),
           date: $(this).text(),
-          url: $(this).attr('href')
+          url: addBaseUrlToPath(baseUrl, $(this).attr('href'))
         };
       }).get();
     });
